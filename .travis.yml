@@ -1,5 +1,6 @@
 sudo: false
 langauge: node_js
+cache: node_modules
 before_script:
   - npm install -g gitbook-cli
 script: npm install && gitbook install && gitbook build
