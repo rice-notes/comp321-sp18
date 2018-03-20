@@ -9,8 +9,8 @@
     ],
     "pluginsConfig": {
         "edit-link": {
-          "base": "https://github.com/rice-notes/comp321-sp18/tree/source/src",
-          "label": "EDIT"
+          "base": "https://github.com/rice-notes/comp321-sp18/tree/master/src",
+          "label": "edit"
         }
     }
 }
