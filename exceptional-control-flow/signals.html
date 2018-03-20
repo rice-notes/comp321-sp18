@@ -1,0 +1,484 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Signals · COMP321: Introduction to Computer Systems</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        <meta name="author" content="Gabriel Vacaliuc">
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-katex/katex.min.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    
+    <link rel="prev" href="basics.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Exceptional Control Flow
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="basics.html">
+            
+                <a href="basics.html">
+            
+                    
+                    Basics of Child Processes
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.2.2" data-path="signals.html">
+            
+                <a href="signals.html">
+            
+                    
+                    Signals
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Signals</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="signals">Signals</h1>
+<p>A small message that notifies a process that a specific event has occured
+in the system.  Always sent from the kernel, sometimes at the request of
+another process.</p>
+<h2 id="sending-a-signal">Sending a Signal</h2>
+<ul>
+<li>Kernel sends a signal to a process by updatign some state in the context
+of the destination process</li>
+<li>kernel sends signal for follwing reasons:<ul>
+<li>kernel has detected a system event </li>
+<li>another process invoked the <code>kill</code> command to send a signal to the 
+destination process</li>
+</ul>
+</li>
+</ul>
+<h2 id="receiving-a-signal">Receiving a Signal</h2>
+<ul>
+<li>destination process receives a signal when it is forced to react in some way
+to the delivery of a signal</li>
+<li>ways to react:<ul>
+<li>ignore</li>
+<li>terminate the process (with cleanup)</li>
+<li>catch the signal and execute a user-level function called a <strong>signal
+handler</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="pending-signals">Pending Signals</h2>
+<p>A signal is pending if it has been sent by a process but not yet receieved.</p>
+<ul>
+<li>There can be <strong>at most</strong> one pending signal of a given type</li>
+<li><strong>signals are not queued</strong></li>
+<li>processes can <em>block</em> the receipt of certain signals</li>
+<li>a pending signal is received at most once</li>
+</ul>
+<p>Kernel maintains <code>pending</code> and <code>blocked</code> bit vectors in the context of each
+process.  <code>pending</code> represents a list of the pending signals for a process,
+kernel will set / clear bit k when a signal of type k is delivered / received.
+<code>blocked</code> represents a bitmask over <code>pending</code> that indicates whether a 
+process is blocking bit k or not.</p>
+<h2 id="signal-handlers">Signal Handlers</h2>
+<p>To do something different than the default action associated with the 
+receipt of signal <code>signum</code> use:</p>
+<pre><code class="lang-c"><span class="hljs-keyword">handler_t</span> *signal(<span class="hljs-keyword">int</span> signum, <span class="hljs-keyword">handler_t</span> handler)
+</code></pre>
+<p>where:</p>
+<ul>
+<li><code>signum</code> is the type of the signal to handle</li>
+<li><code>handler</code> could be<ul>
+<li><code>SIG_IGN</code> to ignore the signal</li>
+<li><code>SIG_DFL</code> to call the default handler</li>
+<li>the address of a user defined handler method with the template: <code>void
+f(int signum)</code></li>
+</ul>
+</li>
+</ul>
+<p>This is known as <strong>installing a signal handler</strong>.  Note that <code>signal</code> does
+not signal a process, it just sets the handler for a specific signal.</p>
+<h2 id="blocking-and-unblocking-signals">Blocking and Unblocking Signals</h2>
+<p>Kernel automatically blocks signals of the type currently being handled.  Can
+also explicitly block and unblock signals using:</p>
+<ul>
+<li><code>sigprocmask</code></li>
+<li><code>sigemtpyset</code></li>
+<li><code>sigfillset</code></li>
+<li><code>sigaddset</code></li>
+<li><code>sigdelset</code></li>
+</ul>
+<p>Temporarily Blocking Signals:</p>
+<pre><code class="lang-c"><span class="hljs-keyword">sigset_t</span> mask, prev_mask;
+
+<span class="hljs-comment">// Creates empty set and adds SIGINT</span>
+Sigemptyset(&amp;mask);
+Sigaddset(&amp;mask, SIGINT);
+
+<span class="hljs-comment">// Tells kernel to block the signals in mask, saving previous mask to prev_mask</span>
+Sigprocmask(SIG_BLOCK, &amp;mask, &amp;prev_mask);
+
+<span class="hljs-comment">/* Code region that will not be interrupted by SIGINT */</span>
+
+<span class="hljs-comment">// Restore previous mask using SIG_SETMASK</span>
+Sigprocmask(SIG_SETMASK, &amp;prev_mask, <span class="hljs-literal">NULL</span>);
+</code></pre>
+<h2 id="guidelines-for-writing-safe-signal-handlers">Guidelines for Writing Safe Signal Handlers</h2>
+<p>It&apos;s easy to run into issues with buggy signal handlers, as they run 
+concurrently with the main code, and share the same global data structures.  So, 
+a handler can mutate shared state while other code is using that state
+and can cause serious issues.  </p>
+<ul>
+<li>G0: Keep handlers as simple as possible</li>
+<li>G1: Call only async-signal-safe functions</li>
+<li>G2: Save and restore <code>errno</code> on entry / exit</li>
+<li>G3: Protect accesses to shared data structures by temporarily blocking
+<strong>all</strong> signals</li>
+<li>G4: Declare global variables as <code>volatile</code></li>
+<li>G5: Declare global flags as <code>volatile sig_atomic_t</code><ul>
+<li>a flag is a variable that is only read or written <code>flag = 1</code> NOT <code>flag++</code></li>
+<li>doesn&apos;t need to be protected like other globals</li>
+</ul>
+</li>
+</ul>
+<h2 id="synchronizing-flows-to-avoid-races">Synchronizing Flows to Avoid Races</h2>
+<p>Consider the following example of a simple shell (with a subtle bug):</p>
+<pre><code class="lang-c"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">handler</span><span class="hljs-params">(<span class="hljs-keyword">int</span> sig)</span>
+</span>{
+    <span class="hljs-keyword">int</span> olderrno = errno;
+    <span class="hljs-keyword">sigset_t</span> mask_all, prev_all;
+    <span class="hljs-keyword">pid_t</span> pid;
+
+    Sigfillset(&amp;mask_all);
+
+    <span class="hljs-keyword">while</span> ((pid = waitpid(<span class="hljs-number">-1</span>, <span class="hljs-literal">NULL</span>, <span class="hljs-number">0</span>)) &gt; <span class="hljs-number">0</span>) { <span class="hljs-comment">/* Reap child */</span>
+        Sigprocmask(SIG_BLOCK, &amp;mask_all, &amp;prev_all);
+        deletejob(pid); <span class="hljs-comment">/* Delete the child from the job list */</span>
+        Sigprocmask(SIG_SETMASK, &amp;prev_all, <span class="hljs-literal">NULL</span>);
+    }
+    <span class="hljs-keyword">if</span> (errno != ECHILD)
+        Sio_error(<span class="hljs-string">&quot;waitpid error&quot;</span>);
+    errno = olderrno;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span> **argv)</span>
+</span>{
+    <span class="hljs-keyword">int</span> pid;
+    <span class="hljs-keyword">sigset_t</span> mask_all, prev_all;
+
+    Sigfillset(&amp;mask_all);
+    Signal(SIGCHLD, handler);
+    initjobs(); <span class="hljs-comment">/* Initialize the job list */</span>
+
+    <span class="hljs-keyword">while</span> (<span class="hljs-number">1</span>) {
+        <span class="hljs-keyword">if</span> ((pid = Fork()) == <span class="hljs-number">0</span>) { <span class="hljs-comment">/* Child */</span>
+            Execve(<span class="hljs-string">&quot;/bin/date&quot;</span>, argv, <span class="hljs-literal">NULL</span>);
+        }
+
+        Sigprocmask(SIG_BLOCK, &amp;mask_all, &amp;prev_all); <span class="hljs-comment">/* Parent */</span>
+        addjob(pid); <span class="hljs-comment">/* Add the child to the job list */</span>
+        Sigprocmask(SIG_SETMASK, &amp;prev_all, <span class="hljs-literal">NULL</span>);
+    }
+    <span class="hljs-built_in">exit</span>(<span class="hljs-number">0</span>);
+}
+</code></pre>
+<p>The issue here, is that this program assumes that the parent runs first, and
+adds the job to the job queue.  However, it&apos;s entirely possible that the
+child executes, finishes, triggers a <code>SIGCHLD</code> and the <code>handler</code> code gets
+executed before the job can be added to the job list!  So, we have to make 
+sure that the parent code to add the job to the job list is <strong>always</strong> executed
+before the handler is called for a <code>SIGCHLD</code> signal.</p>
+<p>Corrected Scenario (block <code>SIGCHLD</code> in the parent code before forking child):</p>
+<pre><code class="lang-c"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span> **argv)</span>
+</span>{
+    <span class="hljs-keyword">int</span> pid;
+    <span class="hljs-keyword">sigset_t</span> mask_all, prev_one, mask_sigchld;
+
+    Sigfillset(&amp;mask_all);
+    Sigemptyset(&amp;mask_sigchld);
+    Sigaddset(&amp;mash_sigchld, SIGCHLD);
+    Signal(SIGCHLD, handler);
+    initjobs(); <span class="hljs-comment">/* Initialize the job list */</span>
+
+    <span class="hljs-keyword">while</span> (<span class="hljs-number">1</span>) {
+        Sigprocmask(SIG_BLOCK, &amp;mask_sigchld, &amp;prev_one); <span class="hljs-comment">/* Block SIGCHLD */</span>
+        <span class="hljs-keyword">if</span> ((pid = Fork()) == <span class="hljs-number">0</span>) { <span class="hljs-comment">/* Child */</span>
+            Sigprocmask(SIG_SETMASK, &amp;prev_one, <span class="hljs-literal">NULL</span>); <span class="hljs-comment">/* Restore blocked vector in the child */</span>
+            Execve(<span class="hljs-string">&quot;/bin/date&quot;</span>, argv, <span class="hljs-literal">NULL</span>);
+        }
+
+        Sigprocmask(SIG_BLOCK, &amp;mask_all, <span class="hljs-literal">NULL</span>); <span class="hljs-comment">/* Parent */</span>
+        addjob(pid); <span class="hljs-comment">/* Add the child to the job list */</span>
+        Sigprocmask(SIG_SETMASK, &amp;prev_one, <span class="hljs-literal">NULL</span>);
+    }
+    <span class="hljs-built_in">exit</span>(<span class="hljs-number">0</span>);
+}
+</code></pre>
+<h2 id="waiting-for-signals">Waiting for Signals</h2>
+<p>we waited for fg jobs using wait
+wait has to go in SIGCHLD handler, not main routine</p>
+<p>Let&apos;s say we&apos;d like to wait for a child process to finish, such as waiting
+for a foreground job to finish before continuing execution in our parent
+thread.  To do this, we use a <code>SIGCHLD</code> handler that sets a global atomic
+variable <code>pid</code> of the process ID of the child.  How to wait in the parent?
+Consider a naive solution:</p>
+<pre><code class="lang-c">Sigprocmask(SIG_BLOCK, &amp;mask, &amp;prev); <span class="hljs-comment">/* Block SIG_CHLD */</span>
+<span class="hljs-keyword">if</span> (Fork() == <span class="hljs-number">0</span>) <span class="hljs-comment">/* Child */</span>
+    <span class="hljs-built_in">exit</span>(<span class="hljs-number">0</span>);
+
+pid = <span class="hljs-number">0</span>;
+Sigprocmask(SIG_SETMASK, &amp;prev, <span class="hljs-literal">NULL</span>); <span class="hljs-comment">/* Unblock SIG_CHLD */</span>
+<span class="hljs-keyword">while</span> (!pid)
+    ;
+</code></pre>
+<p>While this does work, it&apos;s very inefficient.  The main loop is sitting here
+spinning until it finds a non-zero pid.  Take a look at these other incorrect
+or inefficient solutions:</p>
+<p>This solution can run into a race condition.  Since we&apos;ve unblocked <code>SIGCHLD</code>
+signals, the kernel could hit us with a <code>SIGCHLD</code> at any point in this
+execution.  If <code>pid</code> is not initially set, but we receive a signal before the 
+call to <code>pause</code>, then <code>pause</code> will wait for a signal that will never arrive, 
+since the <code>SIGCHLD</code> signal was already called</p>
+<pre><code class="lang-c"><span class="hljs-keyword">while</span> (!pid) <span class="hljs-comment">/* Race Condition */</span>
+    pause();
+</code></pre>
+<p>This solution forces the system to wait a full second before checking if the 
+<code>pid</code> is set.  That&apos;s forever! Even though you can choose a smaller value
+to sleep for, what do you choose!</p>
+<pre><code class="lang-c"><span class="hljs-keyword">while</span> (!pid) <span class="hljs-comment">/* Too Slow */</span>
+    sleep(<span class="hljs-number">1</span>);
+</code></pre>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="basics.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page: Basics of Child Processes">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Signals","level":"1.2.2","depth":2,"previous":{"title":"Basics of Child Processes","level":"1.2.1","depth":2,"path":"exceptional-control-flow/basics.md","ref":"./exceptional-control-flow/basics.md","articles":[]},"dir":"ltr"},"config":{"plugins":["katex","edit-link"],"root":"src","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"edit-link":{"label":"edit","base":"https://github.com/rice-notes/comp321-sp18/tree/master/src"},"katex":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"theme":"default","author":"Gabriel Vacaliuc","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"variables":{},"title":"COMP321: Introduction to Computer Systems","gitbook":"*","description":"Notes from the Spring 2018 offering of STAT321 at Rice University."},"file":{"path":"exceptional-control-flow/signals.md","mtime":"2018-03-20T09:57:26.063Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2018-03-20T09:58:31.193Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-edit-link/plugin.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
