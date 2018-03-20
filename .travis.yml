@@ -1,0 +1,5 @@
+sudo: false
+langauge: node_js
+before_script:
+  - npm install -g gitbook-cli
+script: npm install && gitbook install && gitbook build
