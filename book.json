@@ -1,0 +1,9 @@
+{
+    "root": ".",
+    "title": "COMP321: Introduction to Computer Systems",
+    "description": "Notes from the Spring 2018 offering of STAT321 at Rice University.",
+    "author": "Gabriel Vacaliuc",
+    "plugins": [
+        "katex"
+    ]
+}
