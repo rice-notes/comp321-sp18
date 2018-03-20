@@ -1,9 +1,16 @@
 {
-    "root": ".",
+    "root": "src",
     "title": "COMP321: Introduction to Computer Systems",
     "description": "Notes from the Spring 2018 offering of STAT321 at Rice University.",
     "author": "Gabriel Vacaliuc",
     "plugins": [
-        "katex"
-    ]
+        "katex",
+        "edit-link"
+    ],
+    "pluginsConfig": {
+        "edit-link": {
+          "base": "https://github.com/rice-notes/comp321-sp18/tree/source/src",
+          "label": "EDIT"
+        }
+    }
 }
